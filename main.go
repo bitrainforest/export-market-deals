@@ -98,10 +98,6 @@ func main() {
 	wg.Wait()
 }
 
-func getDeals() {
-
-}
-
 func writeToTxt(file string, deals map[string]*api.MarketDeal) error {
 	defer wg.Done()
 	f, err := os.Create(file)
@@ -135,33 +131,24 @@ func writeToDB(ctx context.Context, url string, deals map[string]*api.MarketDeal
 	}
 
 	var (
-		dds   []*DealModel
 		count int64
 	)
-
-	dd := NewDealsDB(db)
+	dd, err := NewDealsDB(ctx, db)
+	if err != nil {
+		return err
+	}
 	for id, deal := range deals {
-		if len(dds) >= batchCommit {
-			err := dd.Insert(ctx, dds)
-			if err != nil {
-				return err
-			}
-			dds = []*DealModel{}
-		}
-		dds = append(dds, &DealModel{
+		err := dd.Insert(ctx, &DealModel{
 			ID:         id,
 			MarketDeal: *deal,
 		})
-		count++
-		if count%10000 == 0 {
-			log.Debugw("store to db", "count", count, "id", id)
-		}
-	}
-	if len(dds) > 0 {
-		err := dd.Insert(ctx, dds)
 		if err != nil {
 			return err
 		}
+		count++
+		if count%10000 == 0 {
+			log.Debugw("insert to database", "count", count, "id", id)
+		}
 	}
-	return nil
+	return dd.Commit()
 }

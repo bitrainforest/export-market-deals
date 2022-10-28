@@ -92,7 +92,7 @@ func (d *dealAccessor) scan(row Scannable) error {
 	return nil
 }
 
-func (d *dealAccessor) insert(ctx context.Context, tx *sql.Tx) error {
+func (d *dealAccessor) insert(ctx context.Context, stmt *sql.Stmt) error {
 	// For each field
 	var values []interface{}
 	placeholders := make([]string, 0, len(values))
@@ -112,7 +112,7 @@ func (d *dealAccessor) insert(ctx context.Context, tx *sql.Tx) error {
 	// Execute the INSERT
 	qry := "INSERT INTO Deals (" + dealFieldsStr + ") "
 	qry += "VALUES (" + strings.Join(placeholders, ",") + ")"
-	_, err := tx.ExecContext(ctx, qry, values...)
+	_, err := stmt.ExecContext(ctx, values...)
 	return err
 }
 
@@ -150,38 +150,58 @@ func (d *dealAccessor) update(ctx context.Context) error {
 }
 
 type DealsDB struct {
-	db *sql.DB
+	db         *sql.DB
+	insertStmt *sql.Stmt
+	tx         *sql.Tx
 }
 
-func NewDealsDB(db *sql.DB) *DealsDB {
-	return &DealsDB{db: db}
-}
+func NewDealsDB(ctx context.Context, db *sql.DB) (*DealsDB, error) {
 
-func (d *DealsDB) Insert(ctx context.Context, deals []*DealModel) error {
-	tx, err := d.db.Begin()
+	prepare(db)
+
+	tx, err := db.Begin()
 	if err != nil {
+		return nil, err
+	}
+	stmt, err := getinsertStmt(ctx, tx)
+	if err != nil {
+		return nil, err
+	}
+	return &DealsDB{db: db, insertStmt: stmt, tx: tx}, nil
+}
+
+func (d *DealsDB) Insert(ctx context.Context, deal *DealModel) error {
+	if err := d.newDealDef(deal).insert(ctx, d.insertStmt); err != nil {
 		return err
 	}
-	for _, deal := range deals {
-		if err := d.newDealDef(deal).insert(ctx, tx); err != nil {
-			return err
-		}
-	}
-	return tx.Commit()
+	return nil
 }
 
-func (d *DealsDB) Update(ctx context.Context, deal *DealModel) error {
-	return d.newDealDef(deal).update(ctx)
-}
-
-func (d *DealsDB) ByID(ctx context.Context, id uint64) (*DealModel, error) {
-	qry := "SELECT " + dealFieldsStr + " FROM Deals WHERE id=?"
-	row := d.db.QueryRowContext(ctx, qry, id)
-	return d.scanRow(row)
+func (d *DealsDB) Commit() error {
+	return d.tx.Commit()
 }
 
 func (d *DealsDB) scanRow(row Scannable) (*DealModel, error) {
 	var deal DealModel
 	err := d.newDealDef(&deal).scan(row)
 	return &deal, err
+}
+
+func getinsertStmt(ctx context.Context, tx *sql.Tx) (*sql.Stmt, error) {
+	// For each field
+	placeholders := make([]string, 0, len(dealFields))
+	for _, _ = range dealFields {
+		placeholders = append(placeholders, "?")
+	}
+	// Execute the INSERT
+	qry := "INSERT INTO Deals (" + dealFieldsStr + ") "
+	qry += "VALUES (" + strings.Join(placeholders, ",") + ")"
+
+	return tx.PrepareContext(ctx, qry)
+}
+
+func prepare(db *sql.DB) {
+	db.Exec("PRAGMA journal_mode = OFF;")
+	db.Exec("PRAGMA synchronous = OFF;")
+	db.Exec("PRAGMA temp_store = MEMORY;")
 }
