@@ -39,7 +39,9 @@ func (a APIInfo) DialArgs(version string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-
+		if useHttp {
+			return "http://" + addr + "/rpc/" + version, nil
+		}
 		return "ws://" + addr + "/rpc/" + version, nil
 	}
 

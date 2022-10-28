@@ -19,15 +19,19 @@ var (
 	log = logging.Logger("exporter")
 	wg  sync.WaitGroup
 
-	outFile string
-	dbURL   string
-	debug   bool
+	outFile     string
+	dbURL       string
+	debug       bool
+	batchCommit int
+	useHttp     bool
 )
 
 func init() {
 	flag.StringVar(&outFile, "out-file", "deals.txt", "filename to write")
 	flag.StringVar(&dbURL, "db-url", "sqlite:db.sqlite3?loc=auto", "database connection info")
+	flag.IntVar(&batchCommit, "batch-commit", 500, "submit contains the number of deals")
 	flag.BoolVar(&debug, "debug", false, "enable debug model")
+	flag.BoolVar(&useHttp, "use-http", false, "use http for connect to lotus")
 }
 
 func main() {
@@ -65,30 +69,37 @@ func main() {
 	}
 	log.Infow("get deals", "took", time.Since(start).String())
 
-	wg.Add(1)
-	go func() {
-		start = time.Now()
-		defer func() {
-			log.Infow("write deals to file", "took", time.Since(start).String())
+	if outFile != "" {
+		wg.Add(1)
+		go func() {
+			start = time.Now()
+			defer func() {
+				log.Infow("write deals to file", "took", time.Since(start).String())
+			}()
+			log.Infof("writing deals to %s", outFile)
+			if err := writeToTxt(outFile, deals); err != nil {
+				log.Errorf("write deals to file: %s", err)
+			}
 		}()
-		log.Infof("writing deals to %s", outFile)
-		if err := writeToTxt(outFile, deals); err != nil {
-			log.Errorf("write deals to file: %s", err)
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		start := time.Now()
-		defer func() {
-			log.Infow("write to db", "took", time.Since(start).String())
+	}
+	if dbURL != "" {
+		wg.Add(1)
+		go func() {
+			start := time.Now()
+			defer func() {
+				log.Infow("write to db", "took", time.Since(start).String())
+			}()
+			log.Infof("writing to db...")
+			if err := writeToDB(ctx, dbURL, deals); err != nil {
+				log.Errorf("write to db: %s", err)
+			}
 		}()
-		log.Infof("writing to db...")
-		if err := writeToDB(ctx, dbURL, deals); err != nil {
-			log.Errorf("write to db: %s", err)
-		}
-	}()
+	}
 	wg.Wait()
+}
+
+func getDeals() {
+
 }
 
 func writeToTxt(file string, deals map[string]*api.MarketDeal) error {
@@ -130,7 +141,7 @@ func writeToDB(ctx context.Context, url string, deals map[string]*api.MarketDeal
 
 	dd := NewDealsDB(db)
 	for id, deal := range deals {
-		if len(dds) >= 500 {
+		if len(dds) >= batchCommit {
 			err := dd.Insert(ctx, dds)
 			if err != nil {
 				return err
@@ -142,7 +153,7 @@ func writeToDB(ctx context.Context, url string, deals map[string]*api.MarketDeal
 			MarketDeal: *deal,
 		})
 		count++
-		if count%100 == 0 {
+		if count%10000 == 0 {
 			log.Debugw("store to db", "count", count, "id", id)
 		}
 	}
