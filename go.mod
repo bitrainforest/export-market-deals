@@ -4,14 +4,12 @@ go 1.18
 
 require (
 	github.com/filecoin-project/go-address v1.0.0
-	github.com/filecoin-project/go-jsonrpc v0.1.7
 	github.com/filecoin-project/go-state-types v0.1.11
 	github.com/filecoin-project/lotus v1.17.0
 	github.com/ipfs/go-cid v0.3.2
 	github.com/ipfs/go-log/v2 v2.5.1
 	github.com/mattn/go-sqlite3 v1.14.15
 	github.com/multiformats/go-multiaddr v0.6.0
-	github.com/whyrusleeping/cbor-gen v0.0.0-20220514204315-f29c37e9c44c
 	github.com/xo/dburl v0.12.1
 )
 
@@ -38,6 +36,7 @@ require (
 	github.com/filecoin-project/go-hamt-ipld v0.1.5 // indirect
 	github.com/filecoin-project/go-hamt-ipld/v2 v2.0.0 // indirect
 	github.com/filecoin-project/go-hamt-ipld/v3 v3.1.0 // indirect
+	github.com/filecoin-project/go-jsonrpc v0.1.7 // indirect
 	github.com/filecoin-project/go-padreader v0.0.1 // indirect
 	github.com/filecoin-project/go-statestore v0.2.0 // indirect
 	github.com/filecoin-project/specs-actors v0.9.15 // indirect
@@ -85,7 +84,7 @@ require (
 	github.com/ipfs/interface-go-ipfs-core v0.7.0 // indirect
 	github.com/ipld/go-car v0.4.0 // indirect
 	github.com/ipld/go-codec-dagpb v1.3.2 // indirect
-	github.com/ipld/go-ipld-prime v0.17.0 // indirect
+	github.com/ipld/go-ipld-prime v0.19.0 // indirect
 	github.com/ipld/go-ipld-selector-text-lite v0.0.1 // indirect
 	github.com/jbenet/goprocess v0.1.4 // indirect
 	github.com/jessevdk/go-flags v1.4.0 // indirect
@@ -110,7 +109,7 @@ require (
 	github.com/multiformats/go-base36 v0.1.0 // indirect
 	github.com/multiformats/go-multiaddr-dns v0.3.1 // indirect
 	github.com/multiformats/go-multibase v0.1.1 // indirect
-	github.com/multiformats/go-multicodec v0.5.0 // indirect
+	github.com/multiformats/go-multicodec v0.6.0 // indirect
 	github.com/multiformats/go-multihash v0.2.1 // indirect
 	github.com/multiformats/go-varint v0.0.6 // indirect
 	github.com/nkovacs/streamquote v1.0.0 // indirect
@@ -127,6 +126,7 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.0.1 // indirect
 	github.com/whyrusleeping/bencher v0.0.0-20190829221104-bb6607aa8bba // indirect
+	github.com/whyrusleeping/cbor-gen v0.0.0-20220514204315-f29c37e9c44c // indirect
 	github.com/whyrusleeping/timecache v0.0.0-20160911033111-cfcb2f1abfee // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.opencensus.io v0.23.0 // indirect
